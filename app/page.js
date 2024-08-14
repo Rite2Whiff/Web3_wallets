@@ -9,34 +9,29 @@ import { Keypair } from "@solana/web3.js";
 export default function Home() {
   const [wallets, setWallets] = useState([]);
   const [mnemonic, setMnemonic] = useState([]);
+  const [mnemonicArray, setMnemonicArray] = useState([]);
 
   const generateMnemonicPhrase = () => {
-    const mnemonic = generateMnemonic().split();
-    const resultArray = mnemonic[0].split(" ");
-    setMnemonic(resultArray);
-    return resultArray;
+    const mnemonic = generateMnemonic();
+    setMnemonic(mnemonic);
+    let resultArray = mnemonic.split();
+    resultArray = resultArray[0].split(" ");
+    setMnemonicArray(resultArray);
+    setWallets([]);
   };
 
-  const generateKeyPairs = () => {
-    setWallets(wallets.pop());
-    const mnemonicPhrase = generateMnemonicPhrase();
-    if (mnemonicPhrase) {
-      let newWallett = {};
-      const mnemonic = generateMnemonic();
-      const seed = mnemonicToSeedSync(mnemonic);
-      for (let i = 0; i < 50; i++) {
-        const path = `m/44'/501'/${i}'/0'`; // This is the derivation path
-        const derivedSeed = derivePath(path, seed.toString("hex")).key;
-        const secret = nacl.sign.keyPair.fromSeed(derivedSeed).secretKey;
-        const newPublicKey = Keypair.fromSecretKey(secret).publicKey.toBase58();
-        newWallett = {
-          publicKey: newPublicKey,
-        };
-      }
-      setWallets([...wallets, newWallett]);
-    } else {
-      console.log("please generate a random phrase");
-    }
+  const addWallet = () => {
+    let newWallet = {};
+    const seed = mnemonicToSeedSync(mnemonic);
+    const path = `m/44'/501'/${wallets.length}'/0'`; // This is the derivation path
+    const derivedSeed = derivePath(path, seed.toString("hex")).key;
+    const secret = nacl.sign.keyPair.fromSeed(derivedSeed).secretKey;
+    const newPublicKey = Keypair.fromSecretKey(secret).publicKey.toBase58();
+    newWallet = {
+      publicKey: newPublicKey,
+    };
+    setWallets([...wallets, newWallet]);
+    console.log({ newWallet, mnemonic });
   };
 
   return (
@@ -47,27 +42,27 @@ export default function Home() {
         </h1>
         <button
           onClick={generateMnemonicPhrase}
-          className="border mt-3 rounded-md px-3 py-3 font-semibold bg-teal-400"
+          className="border mt-3 rounded-md px-9 py-3 font-semibold bg-teal-400"
         >
           Generate a random phrase
         </button>
-        <button
-          onClick={generateKeyPairs}
-          className="border mt-3 rounded-md px-3 py-3 font-semibold bg-teal-400"
-        >
-          Generate public key
-        </button>
         <div>
-          <ul className="grid grid-cols-4 gap-4 my-4 ">
-            {mnemonic.map((item, index) => {
-              return (
-                <li className=" text- center inline-block px-5 " key={index}>
-                  {item}
-                </li>
-              );
+          <ul>
+            {mnemonicArray.map((item, index) => {
+              return <li key={index}>{item}</li>;
             })}
           </ul>
         </div>
+        <button
+          onClick={addWallet}
+          className={`${
+            mnemonic.length === 0
+              ? "hidden"
+              : "border mt-3 rounded-md px-9 py-3 font-semibold bg-teal-400"
+          }`}
+        >
+          Generate public key
+        </button>
         <div>
           {wallets.map((wallet, index) => (
             <div key={index} className="p-6 bg-white rounded-lg mt-3 border">
