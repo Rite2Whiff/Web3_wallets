@@ -1,21 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { derivePath } from "ed25519-hd-key";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import { mnemonicToSeedSync } from "bip39";
 import Popup from "./Popup";
-import {
-  Connection,
-  clusterApiUrl,
-  confirmTransaction,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const SolWallet = ({ mnemonic, wallets, setWallets }) => {
   const [solBalance, setSolBalance] = useState(" ");
   const [showPopup, setShowPopup] = useState(false);
+  const [pubKey, setPubKey] = useState(null);
+  const [keyPairValue, setKeyPairValue] = useState(null);
+
+  const handleClick = (publicKey, keyPair) => {
+    openPopup();
+    setPubKey(publicKey);
+    setKeyPairValue(keyPair);
+  };
 
   const openPopup = () => {
     setShowPopup(true);
@@ -26,23 +29,25 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
   };
 
   const requestAirDrop = async (publicKeyString) => {
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
     try {
-      const pubKey = new PublicKey(publicKeyString);
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
+      const myAddress = new PublicKey(publicKeyString);
       const airDropSignature = await connection.requestAirdrop(
-        pubKey,
+        myAddress,
         LAMPORTS_PER_SOL
       );
-      const result = await connection.confirmTransaction(airDropSignature);
-      console.log("Airdrop successful", result);
+      await connection.confirmTransaction(airDropSignature);
+      console.log("Airdrop recieved");
     } catch (error) {
       console.log("error", error);
     }
   };
 
   const getAccountBalance = async (publicKey) => {
-    const url =
-      "https://solana-mainnet.g.alchemy.com/v2/gaa2ERXP5hZrtEaEkCmUVBkHzhlLvw8T";
+    const url = "https://api.devnet.solana.com";
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -52,7 +57,7 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
       jsonrpc: "2.0",
       id: 1,
       method: "getBalance",
-      params: [`${publicKey}`],
+      params: [publicKey],
     });
 
     const response = await fetch(url, {
@@ -65,7 +70,7 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
     const {
       result: { value },
     } = data;
-    setSolBalance(value);
+    setSolBalance(value / 10 ** 9);
   };
 
   const addSolWallet = () => {
@@ -86,7 +91,7 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
     };
 
     setWallets([...wallets, newWallet]);
-    console.log(publicKey, privateKey, privateKey.length);
+    console.log(keyPair);
   };
 
   return (
@@ -105,6 +110,12 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
       <div className="text-black">
         {wallets.map((wallet, index) => (
           <div key={index} className="p-6 bg-white rounded-lg mt-3 border">
+            <Popup
+              showPopup={showPopup}
+              closePopup={closePopup}
+              pubKey={pubKey}
+              keyPairValue={keyPairValue}
+            />
             <h2 className="text-3xl my-2"> Account {wallet.accountNumber}</h2>
             <p>{wallet.privateKey}</p>
             <p className="text-xl font-semibold mb-2">{wallet.publicKey}</p>
@@ -115,7 +126,7 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
               Show Wallet Balance
             </button>
             <button
-              onClick={openPopup}
+              onClick={() => handleClick(wallet.publicKey, wallet.keyPair)}
               className="border ml-3 text-white mt-3 rounded-md px-9 py-3 font-semibold bg-gradient-to-r from-purple-800 via-violet-900 to-purple-800"
             >
               Send Sol
@@ -126,12 +137,6 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
             >
               Request Airdrop
             </button>
-            <Popup
-              showPopup={showPopup}
-              publicKey={wallet.publicKey}
-              closePopup={closePopup}
-              keyPair={wallet.keyPair}
-            />
           </div>
         ))}
       </div>

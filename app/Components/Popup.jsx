@@ -8,7 +8,6 @@ import {
 } from "@headlessui/react";
 import {
   Connection,
-  clusterApiUrl,
   LAMPORTS_PER_SOL,
   Transaction,
   SystemProgram,
@@ -17,33 +16,45 @@ import {
   Keypair,
 } from "@solana/web3.js";
 
-const Popup = ({ showPopup, closePopup, keyPair, publicKey }) => {
+const Popup = ({ showPopup, closePopup, pubKey, keyPairValue }) => {
   const [recipentAddress, setRecipentAddress] = useState("");
-  const [solAmount, setSolAmmount] = useState("");
+  const [solAmount, setSolAmmount] = useState(0);
 
   const sendSol = async () => {
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+    try {
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
+      const keyPair = Keypair.fromSecretKey(
+        new Uint8Array(keyPairValue.secretKey)
+      );
+      const senderPubKey = new PublicKey(pubKey);
+      const recipentPubKey = new PublicKey(recipentAddress);
 
-    const recipentKey = new PublicKey(recipentAddress);
-    const pubKey = new PublicKey(publicKey);
+      const transactionInstruction = SystemProgram.transfer({
+        fromPubkey: senderPubKey,
+        toPubkey: recipentPubKey,
+        lamports: solAmount * LAMPORTS_PER_SOL,
+      });
 
-    console.log(keyPair, pubKey, recipentKey);
+      const transaction = new Transaction().add(transactionInstruction);
 
-    const transferInstruction = SystemProgram.transfer({
-      fromPubkey: pubKey,
-      toPubkey: recipentKey,
-      lamports: solAmount * LAMPORTS_PER_SOL,
-    });
+      const transactionSignature = await sendAndConfirmTransaction(
+        connection,
+        transaction,
+        [keyPair]
+      );
+      console.log("signature", transactionSignature);
+      console.log("Transaction completed");
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
 
-    const transaction = new Transaction().add(transferInstruction);
-
-    const transferSignature = await sendAndConfirmTransaction(
-      connection,
-      transaction,
-      [keyPair]
-    );
-
-    await connection.confirmTransaction(transferSignature);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    sendSol();
   };
 
   return (
@@ -69,7 +80,10 @@ const Popup = ({ showPopup, closePopup, keyPair, publicKey }) => {
                     Send Solana
                   </DialogTitle>
                   <div className="mt-2">
-                    <form className="flex justify-center flex-col gap-3">
+                    <form
+                      onSubmit={handleSubmit}
+                      className="flex justify-center flex-col gap-3"
+                    >
                       <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md">
                         <span className="flex select-none items-center pl-3 text-gray-500 sm:text-sm">
                           Recipent Address :
@@ -99,9 +113,8 @@ const Popup = ({ showPopup, closePopup, keyPair, publicKey }) => {
                         />
                       </div>
                       <button
-                        type="button"
+                        type="submit"
                         className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm  sm:w-auto"
-                        onClick={sendSol}
                       >
                         Send
                       </button>
