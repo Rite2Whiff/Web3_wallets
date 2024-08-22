@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { derivePath } from "ed25519-hd-key";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
@@ -8,7 +8,7 @@ import { mnemonicToSeedSync } from "bip39";
 import Popup from "./Popup";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const SolWallet = ({ mnemonic, wallets, setWallets }) => {
+const SolWallet = ({ mnemonic, solWallets, setSolWallets }) => {
   const [solBalance, setSolBalance] = useState(" ");
   const [showPopup, setShowPopup] = useState(false);
   const [pubKey, setPubKey] = useState(null);
@@ -76,7 +76,7 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
   const addSolWallet = () => {
     let newWallet = {};
     const seed = mnemonicToSeedSync(mnemonic);
-    const path = `m/44'/501'/${wallets.length}'/0'`; // This is the derivation path
+    const path = `m/44'/501'/${solWallets.length}'/0'`; // This is the derivation path
     const derivedSeed = derivePath(path, seed.toString("hex")).key;
     const keyPair = nacl.sign.keyPair.fromSeed(derivedSeed);
     const privateKey = Buffer.from(keyPair.secretKey).toString("base64");
@@ -84,32 +84,37 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
       keyPair.secretKey
     ).publicKey.toBase58();
     newWallet = {
-      accountNumber: wallets.length + 1,
+      accountNumber: solWallets.length + 1,
       publicKey,
       privateKey,
       keyPair,
     };
 
-    setWallets([...wallets, newWallet]);
+    setSolWallets([...solWallets, newWallet]);
     console.log(keyPair);
   };
 
   return (
-    <>
-      <div className="flex gap-4">
-        <button
-          onClick={addSolWallet}
-          className="border mt-3 rounded-md px-9 py-3 font-semibold bg-gradient-to-r from-purple-800 via-violet-900 to-purple-800"
-        >
-          Create a Solana Wallet
-        </button>
-      </div>
-      <div className={`${wallets.length === 0 ? "hidden" : "my-5"}`}>
-        <h2 className="text-3xl">{`Account Balance : ${solBalance}sol`}</h2>
-      </div>
-      <div className="text-black">
-        {wallets.map((wallet, index) => (
-          <div key={index} className="p-6 bg-white rounded-lg mt-3 border">
+    <div className="flex flex-col items-center justify-center">
+      <button
+        onClick={addSolWallet}
+        className="border mt-3 rounded-md px-9 py-3 font-semibold bg-gradient-to-r from-purple-800 via-violet-900 to-purple-800"
+      >
+        Create a Solana Wallet
+      </button>
+      <div className="text-black ">
+        {solWallets.map((wallet, index) => (
+          <div
+            key={index}
+            className="p-6 relative bg-white rounded-lg mt-3 border"
+          >
+            <img
+              className="absolute right-5 top-5"
+              src="https://upload.wikimedia.org/wikipedia/en/b/b9/Solana_logo.png"
+              alt=""
+              width={50}
+              height={50}
+            />
             <Popup
               showPopup={showPopup}
               closePopup={closePopup}
@@ -117,7 +122,6 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
               keyPairValue={keyPairValue}
             />
             <h2 className="text-3xl my-2"> Account {wallet.accountNumber}</h2>
-            <p>{wallet.privateKey}</p>
             <p className="text-xl font-semibold mb-2">{wallet.publicKey}</p>
             <button
               onClick={() => getAccountBalance(wallet.publicKey)}
@@ -137,10 +141,11 @@ const SolWallet = ({ mnemonic, wallets, setWallets }) => {
             >
               Request Airdrop
             </button>
+            <p className="mt-2 text-3xl">{`Account Balance : ${solBalance}sol`}</p>
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 };
 

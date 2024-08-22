@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { generateMnemonic, mnemonicToSeedSync } from "bip39";
+import { generateMnemonic } from "bip39";
 import SolWallet from "./Components/SolWallet";
+import EthWalett from "./Components/EthWalett";
 
 export default function Home() {
   const [mnemonicArray, setMnemonicArray] = useState([]);
   const [mnemonic, setMnemonic] = useState(" ");
-  const [wallets, setWallets] = useState([]);
+  const [solWallets, setSolWallets] = useState([]);
+  const [ethWallets, setEthWallets] = useState([]);
 
   const generateMnemonicPhrase = () => {
     const mnemonic = generateMnemonic();
@@ -15,12 +17,13 @@ export default function Home() {
     let resultArray = mnemonic.split();
     resultArray = resultArray[0].split(" ");
     setMnemonicArray(resultArray);
-    setWallets([]);
+    setSolWallets([]);
+    setEthWallets([]);
   };
 
   return (
     <main className>
-      <div className="min-h-screen max-w-screen-xl  mx-auto flex flex-col items-center">
+      <div className="min-h-screen flex flex-col items-center">
         <h1 className="text-white text-3xl mt-[50px] font-bold font-serif">
           Phatnom Wallet
         </h1>
@@ -41,18 +44,33 @@ export default function Home() {
             })}
           </ul>
         </div>
-        <section
-          className={`${
-            mnemonicArray.length === 0
-              ? "hidden"
-              : "flex flex-col justify-center items-center"
-          }`}
-        >
-          <SolWallet
-            mnemonic={mnemonic}
-            wallets={wallets}
-            setWallets={setWallets}
-          />
+        <section className="flex w-11/12 justify-between">
+          <div
+            className={`${
+              mnemonicArray.length === 0
+                ? "hidden"
+                : "flex flex-col w-1/2 items-center"
+            }`}
+          >
+            <SolWallet
+              mnemonic={mnemonic}
+              solWallets={solWallets}
+              setSolWallets={setSolWallets}
+            />
+          </div>
+          <div
+            className={`${
+              mnemonicArray.length === 0
+                ? "hidden"
+                : "flex flex-col w-1/2  items-center"
+            }`}
+          >
+            <EthWalett
+              mnemonic={mnemonic}
+              ethWallets={ethWallets}
+              setEthWallets={setEthWallets}
+            />
+          </div>
         </section>
       </div>
     </main>
